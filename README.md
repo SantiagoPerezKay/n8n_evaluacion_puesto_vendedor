@@ -7,7 +7,9 @@ Esta automatización corresponde a un **workflow de n8n orientado al área de RR
 El flujo utiliza **IA (OpenAI vía LangChain)** para analizar las respuestas, generar un **puntaje general**, emitir un **dictamen de aptitud**, sugerir **capacitaciones** y almacenar toda la evaluación en una base de datos, además de exponer un **dashboard web** para su visualización.
 
 Es una automatización funcional, pensada para uso interno, que centraliza evaluación, persistencia y visualización en un solo circuito.
-![Diagrama del workflow n8n](.png)
+![Diagrama del workflow n8n](evaluacion_puesto_vendedor.png)
+![Diagrama del workflow n8n](form_evaluacion_puesto_vendedor.png)
+![Diagrama del workflow n8n](dashboard_evaluacion.png)
 ---
 
 ## Objetivo del workflow
@@ -90,6 +92,7 @@ Es una automatización funcional, pensada para uso interno, que centraliza evalu
 ---
 
 ### 6. Dashboard de visualización
+
 - Nodo: `Postgres (SELECT)`
 - Recupera evaluaciones históricas.
 - Nodo: `HTML`
