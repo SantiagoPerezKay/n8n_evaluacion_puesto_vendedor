@@ -1,0 +1,747 @@
+{
+  "name": "Evaluacion puesto Vendendor-Santy",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        160
+      ],
+      "id": "33cfa6c9-fef1-45bb-ad5e-f7bffc8c50a3",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "y24XiTpiUvoN6ssC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const rawOutput = item.json.output;\n\n  // Limpiamos el string\n  let cleaned = rawOutput.replace(/```json|```/g, '').trim();\n\n  // Intentamos parsear, pero si falla, tratamos de arreglar puntaje_general textual\n  let parsed;\n  try {\n    parsed = JSON.parse(cleaned);\n  } catch (error) {\n    // 🔧 Fix rápido: intentar reemplazar puntaje_general textual por null\n    cleaned = cleaned.replace(/\"puntaje_general\"\\s*:\\s*([a-zA-Z]+)/, '\"puntaje_general\": null');\n    try {\n      parsed = JSON.parse(cleaned);\n    } catch (error2) {\n      throw new Error(\"No se pudo parsear el JSON, incluso después de limpiar: \" + error2.message + \"\\nContenido:\\n\" + cleaned);\n    }\n  }\n\n  // Si puntaje_general es string tipo \"fifty\" podemos intentar convertirlo a número\n  if (parsed.puntaje_general && typeof parsed.puntaje_general === 'string') {\n    const maybeNumber = parseInt(parsed.puntaje_general, 10);\n    if (!isNaN(maybeNumber)) {\n      parsed.puntaje_general = maybeNumber;\n    }\n  }\n\n  return { json: parsed };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        -48
+      ],
+      "id": "96243613-8dd7-41f6-a935-e8c1925b05fa",
+      "name": "limpiar respuesta de la ia, salida formato json"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=##ROLL\nEres un asistente de RRHH, tu roll es analizar la informacion de candidatos a vendedores, deberas evaluar todas las respuestas y dar un puntaje general en valor numerico (no para cada respuesta) para el puesto del 1 al 10 (no seas tan severo al dar el puntaje), deberas evaluar cada respuesta y devolver un analis de cada una, un comentario si es apto o no para el puesto, saber en que puedo capacitarlo para mejorar y que puedo potenciar.\n\n##informacion de entrada\n\npregunta 1: Imagina a un cliente que te pide: \"Busco un zapato que me sirva para el trabajo y que no me mate los pies al final del día\".  \nrespuesta:{{ $json['Imagina a un cliente que te pide: \"Busco un zapato que me sirva para el trabajo y que no me mate los pies al final del día\".  '] }}\n\npregunta 2: Un cliente te dice: \"El precio de esta zapatilla me parece caro\".  \nrespuesta:{{ $json['Un cliente te dice: \"El precio de esta zapatilla me parece caro\".  '] }}\n\npregunta 3:  Estás atendiendo a 2 clientes a la vez y un tercero te pide un talle especial. ¿Cómo priorizas? (Elige una opción).  \nrespuesta:{{ $json['  Si Calzalindo fuera una persona, ¿qué 3 palabras usarías para describirla?  '] }}\n\npregunta 4:   Si Calzalindo fuera una persona, ¿qué 3 palabras usarías para describirla?  \nrespuesta:{{ $json['  Si Calzalindo fuera una persona, ¿qué 3 palabras usarías para describirla?  '] }}\n\npregunta 5:   ¿Qué es lo que más te motiva de un trabajo de ventas?  \nrespuesta:{{ $json['  ¿Qué es lo que más te motiva de un trabajo de ventas?  '] }}\n\npregunta 6:\"El Dilema de las Prioridades\nEstás en la caja, un cliente te está pagando con tarjeta. Al mismo tiempo, el teléfono suena con una consulta de un proveedor y un tercer cliente en la puerta te pide ayuda.\"\nrespuesta 6:\n{{ $json['El Dilema de las Prioridades, Estás en la caja, un cliente te está pagando con tarjeta. Al mismo tiempo, el teléfono suena con una consulta de un proveedor y un tercer cliente en la puerta te pide ayuda.'] }}\n#informacion de salida\nDevuélveme **EXCLUSIVAMENTE** un JSON con el siguiente formato:\n\n{\n  \"nombre_completo\":{{ $json[\"NOMBRE COMPLETO\"] }},\n  \"puntaje_general\": float,\n  \"analisis_r1\":String,\n  \"analisis_r2\":String,\n  \"analisis_r3\":String,\n  \"analisis_r4\":String,\n  \"analisis_r5\":String,\n  \"analisis_r6\":String,\n  \"apto\": boolean,\n  \"comentarios\": string,\n  \"capacitacion_recomendada\": string\n}\n\nNo incluyas explicaciones ni texto fuera del JSON.\n\n#informacion a analizar\nproviene del nodo \"info_candidatos\"\n\n#link de las paginas para obtener Informacion para ayudar a tomar evaluaciones\n\nhttps://asociaciondec.org/libros/vender-en-los-zapatos-del-cliente/19748/?utm_source=chatgpt.com\n\nhttps://clickup.com/es-ES/blog/126699/libros-de-ventas?utm_source=chatgpt.com\n\nhttps://librosdecabecera.com/wp-content/uploads/descargas/capitulo-gratis/capitulo-gratis-como-hacer-que-tu-tienda-venda-sola.pdf?utm_source=chatgpt.com\n\nhttps://commerce.orisha.com/es/blog/conocimiento-cliente-retail/?utm_source=chatgpt.com\n\nhttps://www.ringover.es/blog/atencion-al-cliente-en-retail?utm_source=chatgpt.com\n\nhttps://foundever.com/es/blog/ganar-retail-experiencia-cliente-excepcional/?utm_source=chatgpt.com\n\nhttps://www.shopify.com/es/blog/que-es-retail?utm_source=chatgpt.com\n\narchivo en word:\nLo que se espera de un Vendedor Ingresante en Calzalindo\nEl vendedor es el primer punto de contacto entre la marca y el cliente. Por eso, su rol no es solo vender, sino crear una experiencia que deje al cliente satisfecho y con ganas de volver. Desde el inicio, se espera que el vendedor:\n1. En la atención al cliente\n•\tEscuchar activamente: hacer preguntas inteligentes para identificar la necesidad real (ejemplo: comodidad para el trabajo, uso social, tendencia, precio).\n•\tBrindar soluciones prácticas: mostrar opciones adaptadas al cliente en vez de limitarse a lo que pidió.\n•\tManejar objeciones con respeto: si un cliente dice que algo es caro, no discutir, sino buscar alternativas o explicar el valor del producto.\n2. En la gestión de prioridades\n•\tOrganizarse en situaciones de presión: si hay más de un cliente, atender con orden, amabilidad y saber pedir refuerzos cuando hace falta.\n•\tMostrar equilibrio entre velocidad y calidad: resolver rápido, pero sin descuidar la experiencia.\n•\tDemostrar empatía en todo momento: hacer sentir a cada cliente escuchado, aunque deba esperar.\n3. En la actitud y personalidad\n•\tSer proactivo: no esperar a que el cliente pida, sino adelantarse a sus necesidades.\n•\tTransmitir energía positiva: mantener una buena presencia, cordialidad y entusiasmo.\n•\tReflejar los valores de Calzalindo: ser innovador, empático y confiable.\n4. En la gestión de la venta\n•\tImpulsar la venta complementaria: ofrecer productos adicionales que mejoren la experiencia del cliente.\n•\tCuidar la presentación del local y del producto: cada zapato debe entregarse limpio, con su caja y etiqueta correcta.\n•\tCumplir procedimientos: verificar stock, reponer mercadería y manejar el sistema de forma responsable.\n5. En el perfil esperado\n•\tMotivación: sentirse inspirado por ayudar a las personas a encontrar el calzado ideal, no solo por cerrar una venta.\n•\tEstilo de trabajo: más “corredor de fondo” que “velocista”: constante, confiable y con paciencia para construir relaciones duraderas con los clientes.\n•\tTrabajo en equipo: estar dispuesto a cubrir compañeros, compartir buenas prácticas y sumar al clima laboral.\n________________________________________\n👉 En resumen, el vendedor ingresante debe saber escuchar, priorizar con criterio, manejar objeciones, impulsar ventas complementarias y trabajar en equipo, siempre alineado a los valores y objetivos de Calzalindo.\n\n2 archivo en word:\n\nEMPRESA\t\tDEPARTAMENTO  /ÁREA\t\tFECHA\nCalzalindo \t\tCOMERCIAL \t\t28/04/2025\nNOMBRE DEL PUESTO:\tVENDEDOR DE CASA CENTRAL \nREPORTA A:\tENCARGADO DE CASA CENTRAL  \nCANTIDAD DE REPORTES : \t●\t1\n\nMisión del Puesto\nBrindar una atención personalizada, eficiente y cordial a cada cliente que visita la casa central, asesorándolo en la elección del calzado que mejor se adapte a sus necesidades y estilo, asegurando una experiencia de compra satisfactoria y fomentando la fidelización de la marca Calza Lindo. Además, colaborar activamente con el equipo de ventas para alcanzar los objetivos comerciales establecidos por la empresa.\n\nObjetivos \nBrindar atención al cliente con excelencia, generar una experiencia de compra positiva, impulsar la venta de productos de calzado y vestimenta de primeras marcas, y mantener el orden, limpieza y presentación del local comercial, de acuerdo con los estándares de la empresa.\n\n1\t\tResponsabilidades y tareas\n\nResponsabilidad\tTareas\n1.\tCumplir estrictamente los horarios y  las tareas asignadas \t●\tLlegar con 10 minutos de antelación.\n●\tEncender luces del local.\n●\tAbrir los sistemas informáticos, incluyendo la estantería virtual.\n2.\tMantener una actitud proactiva en la organización, limpieza y orden del local\t●\tMantener el piso del local y la vereda libres de suciedad.\n●\tAspirar rincones y áreas donde se acumule tierra.\n●\tConservar muebles y escritorio limpios y organizados.\n●\tRetirar envoltorios, papeles, cajas y residuos de las áreas de trabajo.\n●\tTirar la basura todas las noche\n3.\tAsegurar una excelente atención al cliente, alineada con los valores de Calza Lindo\t●\tAsesorar al cliente promoviendo productos y generando interés de compra para aumentar el ticket promedio.\n●\tEscuchar y registrar requerimientos del cliente sobre productos que la empresa aún no comercializa.\n4.\tComunicar de manera efectiva con el equipo, el encargado y otras áreas como depósito y redes sociales.\n\t●\tColaborar con el depósito si hay poco movimiento en el salón.\n●\tRecordar que los sábados se realiza un video en vivo.\n5.\tContribuir a un ambiente de trabajo positivo, colaborativo y orientado a resultados.\n\t●\tCargar el posnet y realizar el cierre de lote.\n●\tAsegurar que los dispositivos estén cargando.\n●\tApagar los aires acondicionados.\n●\tCorroborar el estado de las vidrieras antes de retirarse.\n6.\tAnticipar los problemas y proponer soluciones creativas que permitan dar soluciones así como evitar a futuro que se vuelvan a producir.\n\t●\tObservar y analizar el funcionamiento diario del local.\n●\tDetectar patrones o causas frecuentes de reclamo o inconvenientes.\n●\tRegistrar y reportar.\n●\tParticipar en la implementación de soluciones \n\n2\t\tIndicadores de desempeño del puesto\n\nVentas individuales \nAtención al cliente \nPresentación del local \nParticipación y colaboración \nPuntualidad y asistencia\nCumplimento de procesos administrativos \n\n3\t\tPrincipales decisiones que se toman en su puesto\nDECISIONES\tDETERMINAR LA IMPORTACIA:\nALTO/MEDIO/BAJO \nSelección de productos para exhibir.\tMEDIO\nDeterminar la mejor estrategia de venta para cada cliente.\tALTO \nResolver situaciones o quejas de los clientes de manera inmediata y eficaz.\tALTO\nTomar decisiones sobre la reposición de productos en la estantería priorizando aquellos de mayor rotación.\tMEDIO \nDecidir qué estrategias utilizar para fidelizar clientes, tales como ofrecerles información sobre futuras promociones o hacer seguimiento de ventas.\tALTO\n\n4\t\tSupervisión / Manejo de reportes\nGRADO\tDESCRIPCIÓN\tMARCAR CON UNA “x” LO QUE CORRESPONDA\n1\tSin personas a cargo. \tX\n2\tA cargo de algunas personas (no más de 2) \t\n3\tManejo de un grupo de trabajo. \t\n\nPERFIL DE LA POSICIÓN\n\n5\t\tRequisitos para el Puesto\n\nEDUCACIÓN (títulos)\nTítulo secundario.\n\nEXPERIENCIA\nPreferentemente con experiencia en atención al cliente o roles que impliquen interacción directa con clientes \n\n6\t\tPerfil de Competencias para el Puesto\n\nCompetencias GENÉRICAS\tNivel Requerido\n(1 a 5)\nPROACTIVIDAD\t5\nTRABAJO EN EQUIPO\t4\nTOLERANCIA A LA PRESIÓN\t2\nRESOLUCIÓN RÁPIDA DE PROBLEMAS \t5\nORIENTACIÓN AL CLIENTE\t4\n\nCompetencias TÉCNICAS\tNivel Requerido por el puesto\n(1 a 5)\nConocimientos básicos de cómo procesar pagos en diferentes métodos \t4\nConocimiento en seguimiento de stock disponible.\t2\nConocimiento en gestión de consultas y ventas.\t4\n\n\n6\t\tPerfil de Competencias para el Puesto\n\nLugar de trabajo \tVenado tuerto – Provincia de Santa Fe\nHorarios: \tFull time \nDisponibilidad los sábados \tSi \nOtras condiciones \tManejo de productos de peso medio \n\n\nnota:para puntaje general simepre utiliza valores numericos nunca un string que represente un valor.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        448,
+        -48
+      ],
+      "id": "135c1dc2-c947-4cfa-ae66-31da2dd9e1ce",
+      "name": "evalua las respuestas de los candidatos"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1P_Mw6HgDyxzg8kxhdfAcQA0C1VJI_WoYe83g6a38WQY/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 483354985,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P_Mw6HgDyxzg8kxhdfAcQA0C1VJI_WoYe83g6a38WQY/edit#gid=483354985"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        -112
+      ],
+      "id": "2537d1f5-396e-4828-9623-1f18757464f7",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "hregLRHbP2rlEK2R",
+          "name": "n8n-app-publicada"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [items[items.length - 1]];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -48
+      ],
+      "id": "5ed518a9-a995-4636-821d-7a3d2ed3195b",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "path": "activarrevision",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        208
+      ],
+      "id": "da6bfd16-333f-4ca7-93de-faa725ede83a",
+      "name": "Webhook",
+      "webhookId": "c69ead1e-c99e-4d0b-ba8c-02bd7d6c1dbe"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1P_Mw6HgDyxzg8kxhdfAcQA0C1VJI_WoYe83g6a38WQY/edit?usp=sharing",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 483354985,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P_Mw6HgDyxzg8kxhdfAcQA0C1VJI_WoYe83g6a38WQY/edit#gid=483354985"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        16,
+        128
+      ],
+      "id": "16ae096e-ece6-45f1-be21-15e08f2d9c1e",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xXCjgmPHDZfkl6yb",
+          "name": "mercadolibre"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## enlaces:\n\nhttps://docs.google.com/spreadsheets/d/1P_Mw6HgDyxzg8kxhdfAcQA0C1VJI_WoYe83g6a38WQY/edit?gid=483354985#gid=483354985\n\nhttps://docs.google.com/document/d/1DClO9sRIMsTawUWYdKzCYhCVzsOAlkCs5XWo0TOtJTY/edit?usp=sharing",
+        "width": 1088
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "ea9f37fc-0391-4aa8-b773-bede88e0850e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "evaluacion_preguntas",
+          "mode": "list",
+          "cachedResultName": "evaluacion_preguntas"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono": "={{ $('Code').item.json.telefono || \"\"}}",
+            "respuesta1": "={{ $('Code').item.json['Imagina a un cliente que te pide: \"Busco un zapato que me sirva para el trabajo y que no me mate los pies al final del día\".  '] || \"NULL\" }}",
+            "respuesta2": "={{ $('Code').item.json['Un cliente te dice: \"El precio de esta zapatilla me parece caro\".  '] || \"NULL\" }}",
+            "respuesta3": "={{ $('Code').item.json['  Estás atendiendo a 2 clientes a la vez y un tercero te pide un talle especial. ¿Cómo priorizas? (Elige una opción).  '] || \"NULL\"}}",
+            "respuesta4": "={{ $('Code').item.json['  Si Calzalindo fuera una persona, ¿qué 3 palabras usarías para describirla?  '] || \"NULL\" }}",
+            "respuesta5": "={{ $('Code').item.json['  ¿Qué es lo que más te motiva de un trabajo de ventas?  '] || \"NULL\"}}",
+            "respuesta6": "={{ $('Code').item.json['El Dilema de las Prioridades, Estás en la caja, un cliente te está pagando con tarjeta. Al mismo tiempo, el teléfono suena con una consulta de un proveedor y un tercer cliente en la puerta te pide ayuda.'] || \"NULL\" }}\n",
+            "nombre": "={{ $json.nombre_completo }}",
+            "analisis1": "={{ $json.analisis_r1 }}",
+            "analisis2": "={{ $json.analisis_r2 }}",
+            "analisis3": "={{ $json.analisis_r3 }}",
+            "analisis4": "={{ $json.analisis_r4 }}",
+            "analisis5": "={{ $json.analisis_r5 }}",
+            "analisis6": "={{ $json.analisis_r6 }}",
+            "puntaje": "={{ $json.puntaje_general }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pregunta1",
+              "displayName": "pregunta1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "pregunta2",
+              "displayName": "pregunta2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "pregunta3",
+              "displayName": "pregunta3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "pregunta4",
+              "displayName": "pregunta4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "pregunta5",
+              "displayName": "pregunta5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "pregunta6",
+              "displayName": "pregunta6",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "respuesta1",
+              "displayName": "respuesta1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "respuesta2",
+              "displayName": "respuesta2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "respuesta3",
+              "displayName": "respuesta3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "respuesta4",
+              "displayName": "respuesta4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "respuesta5",
+              "displayName": "respuesta5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "respuesta6",
+              "displayName": "respuesta6",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "analisis1",
+              "displayName": "analisis1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "analisis2",
+              "displayName": "analisis2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "analisis3",
+              "displayName": "analisis3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "analisis4",
+              "displayName": "analisis4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "analisis5",
+              "displayName": "analisis5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "analisis6",
+              "displayName": "analisis6",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "puntaje",
+              "displayName": "puntaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1056,
+        -48
+      ],
+      "id": "3a57944a-2acc-4a12-97bc-29ae05da133a",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Dashboard para visualizar CVs\nAccede en:https://n8n.calzalindo.com.ar/webhook/cv\n\nDASHBOARD\nhttps://n8n.calzalindo.com.ar/webhook/dashboard",
+        "height": 232,
+        "width": 880
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        592,
+        176
+      ],
+      "typeVersion": 1,
+      "id": "bad449c0-9e20-4188-925b-de37810b8057",
+      "name": "Sticky Note Dashboard"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Dashboard Evaluaciones - Calzalindo</title>\n    <style>\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n        }\n\n        body {\n            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n            padding: 20px;\n            min-height: 100vh;\n        }\n\n        .container {\n            max-width: 1400px;\n            margin: 0 auto;\n        }\n\n        .header {\n            background: white;\n            padding: 30px;\n            border-radius: 15px;\n            box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n            margin-bottom: 30px;\n        }\n\n        h1 {\n            color: #333;\n            font-size: 2.5em;\n            margin-bottom: 10px;\n        }\n\n        .subtitle {\n            color: #666;\n            font-size: 1.1em;\n        }\n\n        .filters {\n            background: white;\n            padding: 25px;\n            border-radius: 15px;\n            box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n            margin-bottom: 30px;\n            display: flex;\n            gap: 20px;\n            flex-wrap: wrap;\n            align-items: center;\n        }\n\n        .filter-group {\n            flex: 1;\n            min-width: 200px;\n        }\n\n        .filter-group label {\n            display: block;\n            margin-bottom: 8px;\n            color: #333;\n            font-weight: 600;\n        }\n\n        .filter-group input, .filter-group select {\n            width: 100%;\n            padding: 12px;\n            border: 2px solid #e0e0e0;\n            border-radius: 8px;\n            font-size: 1em;\n            transition: all 0.3s;\n        }\n\n        .filter-group input:focus, .filter-group select:focus {\n            outline: none;\n            border-color: #667eea;\n        }\n\n        .btn {\n            padding: 12px 30px;\n            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n            color: white;\n            border: none;\n            border-radius: 8px;\n            cursor: pointer;\n            font-size: 1em;\n            font-weight: 600;\n            transition: transform 0.2s;\n            align-self: flex-end;\n        }\n\n        .btn:hover {\n            transform: translateY(-2px);\n            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);\n        }\n\n        .stats {\n            display: grid;\n            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n            gap: 20px;\n            margin-bottom: 30px;\n        }\n\n        .stat-card {\n            background: white;\n            padding: 25px;\n            border-radius: 15px;\n            box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n            text-align: center;\n        }\n\n        .stat-value {\n            font-size: 3em;\n            font-weight: bold;\n            color: #667eea;\n            margin: 10px 0;\n        }\n\n        .stat-label {\n            color: #666;\n            font-size: 1.1em;\n        }\n\n        .evaluaciones-grid {\n            display: grid;\n            gap: 20px;\n        }\n\n        .evaluacion-card {\n            background: white;\n            padding: 25px;\n            border-radius: 15px;\n            box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n            transition: transform 0.3s;\n        }\n\n        .evaluacion-card:hover {\n            transform: translateY(-5px);\n            box-shadow: 0 15px 40px rgba(0,0,0,0.3);\n        }\n\n        .card-header {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            margin-bottom: 20px;\n            padding-bottom: 15px;\n            border-bottom: 2px solid #f0f0f0;\n        }\n\n        .telefono {\n            font-size: 1.3em;\n            font-weight: bold;\n            color: #333;\n        }\n\n        .puntaje-badge {\n            padding: 10px 20px;\n            border-radius: 25px;\n            font-size: 1.2em;\n            font-weight: bold;\n            color: white;\n        }\n\n        .puntaje-alto { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }\n        .puntaje-medio { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }\n        .puntaje-bajo { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }\n\n        .fecha {\n            color: #999;\n            font-size: 0.9em;\n            margin-bottom: 15px;\n        }\n\n        .pregunta-respuesta {\n            margin-bottom: 15px;\n            padding: 15px;\n            background: #f8f9fa;\n            border-radius: 8px;\n            border-left: 4px solid #667eea;\n        }\n\n        .pregunta-titulo {\n            font-weight: 600;\n            color: #333;\n            margin-bottom: 8px;\n            font-size: 1em;\n        }\n\n        .pregunta-texto {\n            color: #555;\n            font-style: italic;\n            margin-bottom: 10px;\n            padding: 8px;\n            background: #e8eaf6;\n            border-radius: 5px;\n            font-size: 0.95em;\n        }\n\n        .respuesta {\n            color: #555;\n            margin-bottom: 8px;\n        }\n\n        .analisis {\n            color: #666;\n            font-style: italic;\n            font-size: 0.9em;\n            padding: 8px;\n            background: white;\n            border-radius: 5px;\n            margin-top: 8px;\n        }\n\n        .no-data {\n            text-align: center;\n            padding: 60px;\n            background: white;\n            border-radius: 15px;\n            box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n        }\n\n        .no-data-icon {\n            font-size: 4em;\n            margin-bottom: 20px;\n        }\n\n        @media (max-width: 768px) {\n            .filters {\n                flex-direction: column;\n            }\n            \n            .filter-group {\n                width: 100%;\n            }\n\n            h1 {\n                font-size: 1.8em;\n            }\n        }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h1>🏢 Dashboard Evaluaciones Calzalindo</h1>\n            <p class=\"subtitle\">Sistema de evaluación de candidatos</p>\n        </div>\n\n        <div class=\"filters\">\n            <div class=\"filter-group\">\n                <label for=\"filterNombre\">👤 Buscar por Nombre</label>\n                <input type=\"text\" id=\"filterNombre\" placeholder=\"Ej: Juan Pérez\">\n            </div>\n            <div class=\"filter-group\">\n                <label for=\"filterTelefono\">🔍 Buscar por Teléfono</label>\n                <input type=\"text\" id=\"filterTelefono\" placeholder=\"Ej: 3462516760\">\n            </div>\n            <div class=\"filter-group\">\n                <label for=\"filterPuntajeMin\">📊 Puntaje Mínimo</label>\n                <input type=\"number\" id=\"filterPuntajeMin\" placeholder=\"Ej: 7.0\" step=\"0.1\" min=\"0\" max=\"10\">\n            </div>\n            <div class=\"filter-group\">\n                <label for=\"filterPuntajeMax\">📊 Puntaje Máximo</label>\n                <input type=\"number\" id=\"filterPuntajeMax\" placeholder=\"Ej: 10.0\" step=\"0.1\" min=\"0\" max=\"10\">\n            </div>\n            <button class=\"btn\" onclick=\"aplicarFiltros()\">Filtrar</button>\n            <button class=\"btn\" onclick=\"limpiarFiltros()\">Limpiar</button>\n        </div>\n\n        <div class=\"stats\">\n            <div class=\"stat-card\">\n                <div class=\"stat-label\">Total Evaluaciones</div>\n                <div class=\"stat-value\" id=\"totalEvaluaciones\">0</div>\n            </div>\n            <div class=\"stat-card\">\n                <div class=\"stat-label\">Puntaje Promedio</div>\n                <div class=\"stat-value\" id=\"promedioScore\">0</div>\n            </div>\n            <div class=\"stat-card\">\n                <div class=\"stat-label\">Mejor Puntaje</div>\n                <div class=\"stat-value\" id=\"mejorScore\">0</div>\n            </div>\n            <div class=\"stat-card\">\n                <div class=\"stat-label\">Candidatos Filtrados</div>\n                <div class=\"stat-value\" id=\"totalFiltrados\">0</div>\n            </div>\n        </div>\n\n        <div id=\"evaluacionesContainer\" class=\"evaluaciones-grid\"></div>\n    </div>\n\n    <script>\n        // Recibe los datos desde n8n (del nodo Execute a SQL query1)\n        const datosN8n = {{ JSON.stringify($('traerdatosbd').all()) }};\n        \n        // Procesa los datos\n        let evaluacionesData = datosN8n.map(item => item.json);\n\n        // Función para cargar y mostrar datos\n        function inicializarDashboard() {\n            if (evaluacionesData && evaluacionesData.length > 0) {\n                mostrarEvaluaciones(evaluacionesData);\n                actualizarEstadisticas(evaluacionesData);\n            } else {\n                document.getElementById('evaluacionesContainer').innerHTML = `\n                    <div class=\"no-data\">\n                        <div class=\"no-data-icon\">📋</div>\n                        <h2>No se encontraron evaluaciones</h2>\n                        <p>No hay datos disponibles en la base de datos</p>\n                    </div>\n                `;\n            }\n        }\n\n        function mostrarEvaluaciones(data) {\n            const container = document.getElementById('evaluacionesContainer');\n            \n            if (data.length === 0) {\n                container.innerHTML = `\n                    <div class=\"no-data\">\n                        <div class=\"no-data-icon\">📋</div>\n                        <h2>No se encontraron evaluaciones</h2>\n                        <p>Intenta ajustar los filtros</p>\n                    </div>\n                `;\n                return;\n            }\n\n            container.innerHTML = data.map(evaluacion => {\n                const puntajeClass = evaluacion.puntaje >= 8 ? 'puntaje-alto' : \n                                    evaluacion.puntaje >= 6 ? 'puntaje-medio' : 'puntaje-bajo';\n                \n                const fecha = new Date(evaluacion.created_at).toLocaleString('es-AR');\n\n                return `\n                    <div class=\"evaluacion-card\">\n                        <div class=\"card-header\">\n                            <span class=\"telefono\">📱 ${evaluacion.telefono || 'Sin teléfono'}</span>\n                            <span class=\"puntaje-badge ${puntajeClass}\">${evaluacion.puntaje ? evaluacion.puntaje.toFixed(1) : 'N/A'}</span>\n                        </div>\n                        <div class=\"fecha\">📅 ${fecha}</div>\n                        ${evaluacion.nombre ? `<div class=\"fecha\">👤 ${evaluacion.nombre}</div>` : ''}\n                        \n                        ${[1,2,3,4,5,6].map(num => {\n                            if (!evaluacion[`respuesta${num}`]) return '';\n                            return `\n                                <div class=\"pregunta-respuesta\">\n                                    <div class=\"pregunta-titulo\">❓ Pregunta ${num}</div>\n                                    ${evaluacion[`pregunta${num}`] ? `<div class=\"pregunta-texto\">${evaluacion[`pregunta${num}`]}</div>` : ''}\n                                    <div class=\"respuesta\"><strong>✍️ Respuesta:</strong> ${evaluacion[`respuesta${num}`]}</div>\n                                    ${evaluacion[`analisis${num}`] ? `<div class=\"analisis\">💡 <strong>Análisis:</strong> ${evaluacion[`analisis${num}`]}</div>` : ''}\n                                </div>\n                            `;\n                        }).join('')}\n                    </div>\n                `;\n            }).join('');\n        }\n\n        function actualizarEstadisticas(data) {\n            const total = data.length;\n            const puntajes = data.filter(e => e.puntaje).map(e => e.puntaje);\n            const promedio = puntajes.length > 0 ? \n                (puntajes.reduce((a, b) => a + b, 0) / puntajes.length).toFixed(1) : 0;\n            const mejor = puntajes.length > 0 ? Math.max(...puntajes).toFixed(1) : 0;\n\n            document.getElementById('totalEvaluaciones').textContent = evaluacionesData.length;\n            document.getElementById('promedioScore').textContent = promedio;\n            document.getElementById('mejorScore').textContent = mejor;\n            document.getElementById('totalFiltrados').textContent = total;\n        }\n\n        function aplicarFiltros() {\n            const nombre = document.getElementById('filterNombre').value.trim().toLowerCase();\n            const telefono = document.getElementById('filterTelefono').value.trim();\n            const puntajeMin = parseFloat(document.getElementById('filterPuntajeMin').value) || 0;\n            const puntajeMax = parseFloat(document.getElementById('filterPuntajeMax').value) || 10;\n\n            let filtrados = evaluacionesData.filter(evaluacion => {\n                const matchNombre = !nombre || (evaluacion.nombre && evaluacion.nombre.toLowerCase().includes(nombre));\n                const matchTelefono = !telefono || (evaluacion.telefono && evaluacion.telefono.includes(telefono));\n                const matchPuntaje = !evaluacion.puntaje || \n                    (evaluacion.puntaje >= puntajeMin && evaluacion.puntaje <= puntajeMax);\n                \n                return matchNombre && matchTelefono && matchPuntaje;\n            });\n\n            mostrarEvaluaciones(filtrados);\n            actualizarEstadisticas(filtrados);\n        }\n\n        function limpiarFiltros() {\n            document.getElementById('filterNombre').value = '';\n            document.getElementById('filterTelefono').value = '';\n            document.getElementById('filterPuntajeMin').value = '';\n            document.getElementById('filterPuntajeMax').value = '';\n            mostrarEvaluaciones(evaluacionesData);\n            actualizarEstadisticas(evaluacionesData);\n        }\n\n        // Inicializar el dashboard al cargar\n        inicializarDashboard();\n    </script>\n</body>\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        448
+      ],
+      "id": "733afe24-d37a-492d-851e-e49669ac785b",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "path": "dashboard",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        448
+      ],
+      "id": "3d0e2d2f-6e98-4593-8d74-68d18ceace9e",
+      "name": "Webhook1",
+      "webhookId": "6cfb1a07-1a5d-40dd-bf7e-1573c70e5325"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=\n {{ $json.body }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1328,
+        448
+      ],
+      "id": "8cf9d229-b541-4868-9628-4b03262c03d1",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee el HTML del nodo anterior\nconst html = $input.item.json.html;\n\n// Retorna la respuesta HTTP directamente\nreturn {\n  statusCode: 200,\n  headers: {\n    'Content-Type': 'text/html; charset=utf-8'\n  },\n  body: html\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        448
+      ],
+      "id": "a32c618d-72f3-4824-a20a-90d143f1612e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "content": "## para activar webhook manual\nhttps://n8n.calzalindo.com.ar/webhook/activarrevision"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "5c841cc9-fc15-42a4-b7d4-d92f8894d3c7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": " SELECT * FROM evaluacion_preguntas ORDER BY created_at DESC",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        448
+      ],
+      "id": "0f8da192-b331-48d9-ad48-3d6d1d13d04b",
+      "name": "traerdatosbd",
+      "credentials": {
+        "postgres": {
+          "id": "nFqo90cHZ3ehf88W",
+          "name": "postgres supabase calzalindo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "1DClO9sRIMsTawUWYdKzCYhCVzsOAlkCs5XWo0TOtJTY",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "=\nNombre: {{ $json.nombre_completo }}\nTelefono: \nPuntaje: {{ $json.puntaje_general }}\nEs apto?: {{ $json.apto }}\n\nAnálisis 1:{{ $json.analisis_r1 }}\n\nAnálisis 2:{{ $json.analisis_r2 }}\n\nAnálisis 3: {{ $json.analisis_r3 }}\nAnálisis 4: {{ $json.analisis_r4 }}\n\nAnálisis 5: {{ $json.analisis_r5 }}\n\nAnálisis 6: {{ $json.analisis_r6 }}\n\nComentario: {{ $json.comentarios }}\nCapacitacion: {{ $json.capacitacion_recomendada }}\n"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        -48
+      ],
+      "id": "66d785d7-d399-496b-babd-ede2a59afb53",
+      "name": "Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "9BcOfZNvOXuaqY80",
+          "name": "n8n-doc"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        0
+      ],
+      "id": "bc3bebe3-2efa-4226-be1a-30cd24020649",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "evalua las respuestas de los candidatos",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limpiar respuesta de la ia, salida formato json": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "evalua las respuestas de los candidatos": {
+      "main": [
+        [
+          {
+            "node": "limpiar respuesta de la ia, salida formato json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "evalua las respuestas de los candidatos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "traerdatosbd",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "traerdatosbd": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a0f27278-4219-4dfc-bddc-f73f44985112",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "222127bd61432024b743b7c80fd78be3d217cd7dc9aece772cb095e64c7c94c4"
+  },
+  "id": "qGoBUzL5a5OODRzU",
+  "tags": []
+}
